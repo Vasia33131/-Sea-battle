@@ -27,6 +27,21 @@ public class InputMouse : MonoBehaviour
         {5, 1}  //1 корабль размером 5
     };
 
+    private void OnEnable()
+    {
+        GameEvents.OnShipPlaced += HandleShipPlaced;
+        GameEvents.OnOrientationChanged += HandleOrientationChanged;
+        GameEvents.OnPlacementCancelled += HandlePlacementCancelled;
+    }
+
+    private void OnDisable()
+    {
+        GameEvents.OnShipPlaced -= HandleShipPlaced;
+        GameEvents.OnOrientationChanged -= HandleOrientationChanged;
+        GameEvents.OnPlacementCancelled -= HandlePlacementCancelled;
+    }
+
+
     void Update()//когда только начинал писать код то я все помещал в апдейт (но кода стало уже слишком много и потому начал создавать новые методы и просто внолсить название) (апдейт жэто то что происхождит каждый кадр)
     {
         Shipsize(); //Обработка размера корабля
@@ -58,7 +73,7 @@ public class InputMouse : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.R)) //Если нажата клавиша R
         {
             _isHorizontal = !_isHorizontal; //Меняем ориентацию
-            
+            GameEvents.InvokeOrientationChanged(_isHorizontal);
         }
     }
 
@@ -76,18 +91,34 @@ public class InputMouse : MonoBehaviour
         {
             if (CanPlaceShip(cellPosition, _selectedShipSize, _isHorizontal))
             {
-                PlaceShip(cellPosition, _selectedShipSize, _isHorizontal);
-                availableShips[_selectedShipSize]--; // Уменьшаем количество доступных кораблей
-                _isPlacingShip = false; // Заканчиваем процесс размещения
+                GameEvents.InvokeShipPlaced(cellPosition, _selectedShipSize, _isHorizontal);
             }
             
         }
 
         if (Input.GetMouseButtonDown(1)) //Правая кнопка мыши - отмена
         {
-            _isPlacingShip = false;
-           
+            GameEvents.InvokePlacementCancelled();
+
         }
+    }
+
+    private void HandleShipPlaced(Vector3Int position, int size, bool isHorizontal)
+    {
+        PlaceShip(position, size, isHorizontal);
+        availableShips[size]--;
+        _isPlacingShip = false;
+    }
+
+    private void HandleOrientationChanged(bool isHorizontal)
+    {
+        Debug.Log($"Ориентация корабля изменена: {(isHorizontal ? "Горизонтальная" : "Вертикальная")}");
+        //Визуальная подсветка или предпросмотр корабля, в общем какойто визуал можно добавить
+    }
+
+    private void HandlePlacementCancelled()
+    {
+        _isPlacingShip = false;
     }
 
     //Проверка возможности размещения корабля
